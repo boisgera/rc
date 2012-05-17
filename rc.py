@@ -17,9 +17,7 @@ def test(x):
     return x+1
 
 def expose(object, name=None):
-    name = name or getattr(object, "__name__", None)
-    if not name:
-        raise TypeError("undefined name")
+    name = name or getattr(object, "__name__")
     socket, port = create_socket()
     zeroconf.register(name, "_rc._tcp", port)
     def loop():
@@ -28,26 +26,33 @@ def expose(object, name=None):
             print "data:", data
             data = json.loads(data)
             if isinstance(data, unicode):
-                function_name = data
+                function = data
             elif isinstance(data, list):
                 function = data.pop(0)
                 if data:
                     args = data.pop(0)
                 else:
                     args = ()
-                if message:
+                if data:
                     kwargs = data.pop(0)
                 else:
                     kwargs = {}
-            function = getattr(object, function_name)
-            output = function(*args, **kwargs)
-            socket.send(json.dumps(output)) 
+            function = getattr(object, function)
+            try:
+                output = [True, function(*args, **kwargs)]
+            except Exception as error:
+                error_module = type(error).__module__ + "."
+                if error_module == "exceptions.":
+                    error_module == ""
+                error_type = error_module + type(error).__name__
+                output = [False, [error_type, error.message]]
+            socket.send(json.dumps(output))
     thread.start_new_thread(loop, ())
 
 def create_socket(ports=None):
+    # ports defaults to the range defined by IANA for dynamic or private ports
+    ports = ports or range(0xc000, 0xffff + 1) 
     socket = context.socket(zmq.REP)
-    # see http://en.wikipedia.org/wiki/Ephemeral_port
-    ports = ports or range(49152, 65535+1) #
     for port in ports:
         try:
             socket.bind("tcp://*:{0}".format(port))
