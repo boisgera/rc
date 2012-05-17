@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Expose objects with __getattr__ support
+desc: ""
+type: :feature
+component: RC
+release: 
+reporter: "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+status: :unstarted
+disposition: 
+creation_time: 2012-05-17 11:41:57.436768 Z
+references: []
+
+id: a233ef6c9b6ac09309e74a710325a511252d96c8
+log_events: 
+- - 2012-05-17 11:41:59.101872 Z
+  - "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+  - created
+  - ""

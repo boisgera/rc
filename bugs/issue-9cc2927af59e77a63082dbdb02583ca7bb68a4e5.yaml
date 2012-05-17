@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Clean up the ZMQ context on exit
+desc: ""
+type: :task
+component: RC
+release: 
+reporter: "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+status: :unstarted
+disposition: 
+creation_time: 2012-05-17 11:40:53.570207 Z
+references: []
+
+id: 9cc2927af59e77a63082dbdb02583ca7bb68a4e5
+log_events: 
+- - 2012-05-17 11:40:56.950753 Z
+  - "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+  - created
+  - ""

@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Expose objects as file descriptor / handler pair
+desc: ""
+type: :feature
+component: RC
+release: 
+reporter: "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+status: :unstarted
+disposition: 
+creation_time: 2012-05-17 11:43:02.634165 Z
+references: []
+
+id: be32a7d7d286745179a5b263bfb7affe2aa60335
+log_events: 
+- - 2012-05-17 11:43:04.053951 Z
+  - "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+  - created
+  - ""
