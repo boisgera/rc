@@ -13,10 +13,10 @@ import zmq
 #-------------------------------------------------------------------------------
 context = zmq.Context()
 
-def test(x):
-    return x+1
-
-def expose(object, name=None):
+#-------------------------------------------------------------------------------
+# RC Server
+#-------------------------------------------------------------------------------
+def serve(object, name=None):
     name = name or getattr(object, "__name__")
     socket, port = create_socket()
     zeroconf.register(name, "_rc._tcp", port)
@@ -25,9 +25,7 @@ def expose(object, name=None):
             data = socket.recv()
             print "data:", data
             data = json.loads(data)
-            if isinstance(data, unicode):
-                function = data
-            elif isinstance(data, list):
+            if isinstance(data, list):
                 function = data.pop(0)
                 if data:
                     args = data.pop(0)
@@ -37,13 +35,16 @@ def expose(object, name=None):
                     kwargs = data.pop(0)
                 else:
                     kwargs = {}
+            else:
+                raise ValueError("invalid data")
+
             function = getattr(object, function)
             try:
                 output = [True, function(*args, **kwargs)]
             except Exception as error:
                 error_module = type(error).__module__ + "."
                 if error_module == "exceptions.":
-                    error_module == ""
+                    error_module = ""
                 error_type = error_module + type(error).__name__
                 output = [False, [error_type, error.message]]
             socket.send(json.dumps(output))
@@ -65,4 +66,44 @@ def create_socket(ports=None):
         error = zmq.ZMQError(message)
         error.errno = zmq.EADDRINUSE
         raise error
+
+#-------------------------------------------------------------------------------
+# RC Client
+#-------------------------------------------------------------------------------
+def get(name):
+    return Proxy(name)
+
+class Function(object):
+    def __init__(self, proxy, name):
+        self.proxy = proxy
+        self.name = name
+    def __call__(self, *args, **kwargs):
+        return self.proxy([self.name, args, kwargs])
+
+class Proxy(object):
+    def __init__(self, name):
+        service_info = zeroconf.search(name, "_rc._tcp").items()[0][1]
+        self.socket = context.socket(zmq.REQ)
+        self.socket.connect("tcp://{address}:{port}".format(**service_info))
+    def __getattr__(self, name):
+        return Function(self, name)
+    def __call__(self, data):
+       data = json.dumps(data)
+       self.socket.send(data)
+       result = json.loads(self.socket.recv())
+       if result[0] is True:
+           return result[1]
+       else:
+           error = result[1]
+           message = error[0] + ": " + error[1]
+           raise Exception(message)
+
+#-------------------------------------------------------------------------------
+# Tests
+#-------------------------------------------------------------------------------
+def test(x):
+    if x != 42:
+        return x+1
+    else:
+        raise ValueError("42")
 
