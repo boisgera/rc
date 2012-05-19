@@ -23,7 +23,6 @@ def serve(object, name=None):
     def loop():
         while True:
             data = socket.recv()
-            print "data:", data
             data = json.loads(data)
             if isinstance(data, list):
                 function = data.pop(0)
@@ -31,16 +30,12 @@ def serve(object, name=None):
                     args = data.pop(0)
                 else:
                     args = ()
-                if data:
-                    kwargs = data.pop(0)
-                else:
-                    kwargs = {}
             else:
                 raise ValueError("invalid data")
 
             function = getattr(object, function)
             try:
-                output = [True, function(*args, **kwargs)]
+                output = [True, function(*args)]
             except Exception as error:
                 error_module = type(error).__module__ + "."
                 if error_module == "exceptions.":
@@ -77,8 +72,8 @@ class Function(object):
     def __init__(self, proxy, name):
         self.proxy = proxy
         self.name = name
-    def __call__(self, *args, **kwargs):
-        return self.proxy([self.name, args, kwargs])
+    def __call__(self, *args):
+        return self.proxy([self.name, args])
 
 class Proxy(object):
     def __init__(self, name):
