@@ -25,7 +25,7 @@ def serve(object, name=None):
             data = socket.recv()
             data = json.loads(data)
             if isinstance(data, list):
-                function = data.pop(0)
+                target = data.pop(0)
                 if data:
                     args = data.pop(0)
                 else:
@@ -33,15 +33,22 @@ def serve(object, name=None):
             else:
                 raise ValueError("invalid data")
 
-            function = getattr(object, function)
             try:
-                output = [True, function(*args)]
+                attr = getattr(object, target, None)
+                if callable(attr):
+                    output = [True, attr(*args)]
+                elif args == []:
+                    attr = getattr(object, target)
+                    output = [True, attr]
+                elif len(args) == 1:
+                    setattr(object, target, args[0])
+                    output = [True, None]
             except Exception as error:
                 error_module = type(error).__module__ + "."
                 if error_module == "exceptions.":
                     error_module = ""
                 error_type = error_module + type(error).__name__
-                output = [False, [error_type, error.message]]
+                output = [False, [error_type, error.message or ""]]
             socket.send(json.dumps(output))
     thread.start_new_thread(loop, ())
 
