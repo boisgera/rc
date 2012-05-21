@@ -3,54 +3,57 @@
 # Python Standard 2.7 Library
 import json
 import thread
+from time import time as now
 
 # Third-Party Libraries
 import zeroconf
 import zmq
+import zmq.eventloop.ioloop 
 
 #-------------------------------------------------------------------------------
-# Remote Control Object Base Class
+# Global ZeroMQ Context and Tornado loop  
 #-------------------------------------------------------------------------------
 context = zmq.Context()
+loop = zmq.eventloop.ioloop.IOLoop.instance()
 
 #-------------------------------------------------------------------------------
-# RC Server
+# RC Server: Request Handler Generation
 #-------------------------------------------------------------------------------
-def serve(object, name=None):
+def make_request_handler(object, name=None):
     name = name or getattr(object, "__name__")
     socket, port = create_socket()
+    # TODO: delay registration until the start of the loop.
     zeroconf.register(name, "_rc._tcp", port)
-    def loop():
-        while True:
-            data = socket.recv()
-            data = json.loads(data)
-            if isinstance(data, list):
-                target = data.pop(0)
-                if data:
-                    args = data.pop(0)
-                else:
-                    args = ()
+    def request_handler(*args, **kwargs):
+        data = socket.recv()
+        data = json.loads(data)
+        if isinstance(data, list):
+            target = data.pop(0)
+            if data:
+                args = data.pop(0)
             else:
-                raise ValueError("invalid data")
+                args = ()
+        else:
+            raise ValueError("invalid data")
 
-            try:
-                attr = getattr(object, target, None)
-                if callable(attr):
-                    output = [True, attr(*args)]
-                elif args == []:
-                    attr = getattr(object, target)
-                    output = [True, attr]
-                elif len(args) == 1:
-                    setattr(object, target, args[0])
-                    output = [True, None]
-            except Exception as error:
-                error_module = type(error).__module__ + "."
-                if error_module == "exceptions.":
-                    error_module = ""
-                error_type = error_module + type(error).__name__
-                output = [False, [error_type, error.message or ""]]
-            socket.send(json.dumps(output))
-    thread.start_new_thread(loop, ())
+        output = None
+        try:
+            attr = getattr(object, target)
+            if callable(attr):
+                output = [True, attr(*args)]
+            elif args == []:
+                output = [True, attr]
+            elif len(args) == 1:
+                setattr(object, target, args[0])
+                output = [True, None]
+        except Exception as error:
+            error_module = type(error).__module__ + "."
+            if error_module == "exceptions.":
+                error_module = ""
+            error_type = error_module + type(error).__name__
+            output = [False, [error_type, error.message or ""]]
+        socket.send(json.dumps(output))
+    return socket, request_handler
 
 def create_socket(ports=None):
     # ports defaults to the range defined by IANA for dynamic or private ports
@@ -101,11 +104,78 @@ class Proxy(object):
            raise Exception(message)
 
 #-------------------------------------------------------------------------------
+# RC Namespace
+#-------------------------------------------------------------------------------
+class Namespace(object):
+    def __getattr__(self, name):
+        return get(name)
+    def __setattr__(self, name, object):
+        socket, handler = make_request_handler(object, name)
+        loop.add_handler(socket, handler, loop.READ)
+    def __iter__(self):
+        for name, type, domain in zeroconf.search(type="_rc._tcp"):
+            yield (name, get(name))
+
+objects = Namespace()
+
+#-------------------------------------------------------------------------------
 # Tests
 #-------------------------------------------------------------------------------
-def test(x):
-    if x != 42:
-        return x+1
-    else:
-        raise ValueError("42")
+class Timer(object):
+    def __init__(self, time=None):
+        self._time = time or 0.0
+        self._clock = None # None means that the time is frozen
+
+    def get_time(self):
+        if self._clock is None:
+            return self._time
+        else:
+            return self._time + (now() - self._clock)
+    time = property(get_time)
+
+    def start(self, time=None):
+        self._time = time or self._time
+        self._clock = now()
+
+    def pause(self):
+        self.__init__(time=self.time)
+
+    def stop(self):
+        self.__init__()
+
+def test_timer():
+    """
+    >>> objects.timer = Timer() # server-side
+    >>> import time; time.sleep(1.0)
+    >>> _ = thread.start_new_thread(loop.start, ())
+
+    >>> timer = objects.timer   # client-side (proxy)
+    >>> timer.time()
+    0.0
+    >>> timer.start()
+    >>> t0, t1 = timer.time(), timer.time()
+    >>> 0.0 < t0 < t1
+    True
+    >>> timer.pause()
+    >>> t0, t1 = timer.time(), timer.time()
+    >>> t0 == t1
+    True
+    >>> timer.start()
+    >>> t1 < timer.time()
+    True
+    >>> timer.pause()
+    >>> timer.start(100.0)
+    >>> timer.time() > 100.0
+    True
+    >>> timer.stop()
+    >>> timer.time() == 0.0
+    True
+    """
+
+def test():
+    import doctest
+    doctest.testmod()
+
+if __name__ == "__main__":
+    test()
 
