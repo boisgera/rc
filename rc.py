@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+# coding: utf-8
+
+"""
+Remote Control
+"""
+
+__author__ = u"Sébastien Boisgérault <Sebastien.Boisgerault@mines-paristech.fr>"
+__license__ = "MIT License"
+__url__ = "https://github.com/boisgera/rc" 
+__version__ = "0.0.0"
 
 # Python Standard 2.7 Library
 import json

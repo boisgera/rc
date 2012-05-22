@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Manage requirements with pip (zmq dep.)
+desc: ""
+type: :task
+component: RC
+release: 
+reporter: "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+status: :unstarted
+disposition: 
+creation_time: 2012-05-22 10:54:44.973452 Z
+references: []
+
+id: 8d931d9fc109f33da4214c4d810c4fcf638ca53c
+log_events: 
+- - 2012-05-22 10:54:46.397319 Z
+  - "S\xC3\xA9bastien Boisg\xC3\xA9rault <Sebastien.Boisgerault@mines-paristech.fr>"
+  - created
+  - ""
